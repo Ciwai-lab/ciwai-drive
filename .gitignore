@@ -50,9 +50,7 @@ app.*.map.json
 /android/app/release
 
 # Env files (jangan sampai ke-push ke GitHub)
-.env
-.env.*
-!.env.example
+!assets/.env
 
 # Web build output
 web/.firebase/
