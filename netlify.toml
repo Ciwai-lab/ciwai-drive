@@ -1,14 +1,13 @@
 [build]
   command = """
-    echo "⚡ Generating .env from Netlify ENV VARS..."
-    echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" > .env
-    echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> .env
-    echo "ADMIN_EMAILS=$ADMIN_EMAILS" >> .env
-    echo "DRIVE_FOLDER_ID=$DRIVE_FOLDER_ID" >> .env
-    flutter build web --release
+    echo "⚡ Generating env.json from Netlify ENV VARS..."
     mkdir -p build/web/assets
-    cp .env build/web/assets/.env
-    echo "✅ .env copied to build/web/assets/.env"
+    echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" > build/web/assets/env.json
+    echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> build/web/assets/env.json
+    echo "ADMIN_EMAILS=$ADMIN_EMAILS" >> build/web/assets/env.json
+    echo "DRIVE_FOLDER_ID=$DRIVE_FOLDER_ID" >> build/web/assets/env.json
+    flutter build web --release
+    echo "✅ env.json copied to build/web/assets/env.json"
   """
   publish = "build/web"
 
