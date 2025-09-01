@@ -1,9 +1,10 @@
-import 'dart:html' as html; // File picker for Flutter Web
-import 'dart:convert';
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
+import 'package:googleapis_auth/auth_browser.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
@@ -14,8 +15,8 @@ class UploadScreen extends StatefulWidget {
 
 class _UploadScreenState extends State<UploadScreen> {
   GoogleSignInAccount? _user;
-  bool _uploading = false;
   String? _status;
+  bool _uploading = false;
   String? _fileLink;
 
   @override
@@ -27,7 +28,10 @@ class _UploadScreenState extends State<UploadScreen> {
   Future<void> _restoreUser() async {
     final googleSignIn = GoogleSignIn(
       clientId: dotenv.env['GOOGLE_CLIENT_ID'],
-      scopes: ['email', 'https://www.googleapis.com/auth/drive.file'],
+      scopes: [
+        'email',
+        drive.DriveApi.driveFileScope,
+      ],
     );
     final account = await googleSignIn.signInSilently();
     setState(() => _user = account);
@@ -52,14 +56,18 @@ class _UploadScreenState extends State<UploadScreen> {
             _fileLink = null;
           });
 
+          // Google Sign-In
           final googleSignIn = GoogleSignIn(
             clientId: dotenv.env['GOOGLE_CLIENT_ID'],
-            scopes: ['email', 'https://www.googleapis.com/auth/drive.file'],
+            scopes: [
+              'email',
+              drive.DriveApi.driveFileScope,
+            ],
           );
-          final account = await googleSignIn.signInSilently() ?? await googleSignIn.signIn();
-          final auth = await account?.authHeaders;
+          final account = await googleSignIn.signInSilently() ??
+              await googleSignIn.signIn();
 
-          if (auth == null) {
+          if (account == null) {
             setState(() {
               _uploading = false;
               _status = "Not authenticated.";
@@ -67,46 +75,44 @@ class _UploadScreenState extends State<UploadScreen> {
             return;
           }
 
-          final folderId = dotenv.env['DRIVE_FOLDER_ID'];
-
-          // Metadata JSON
-          final metadata = {
-            'name': file.name,
-            'parents': [folderId]
-          };
-
-          // Multipart upload (metadata + file)
-          final request = http.MultipartRequest(
-            'POST',
-            Uri.parse("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"),
+          final authHeaders = await account.authHeaders;
+          final client = authenticatedClient(
+            http.BrowserClient(),
+            AccessCredentials(
+              AccessToken(
+                'Bearer',
+                authHeaders['Authorization']!.split(" ").last,
+                DateTime.now().toUtc().add(const Duration(hours: 1)),
+              ),
+              null,
+              [drive.DriveApi.driveFileScope],
+            ),
           );
 
-          request.headers.addAll(auth);
-          request.fields['metadata'] = jsonEncode(metadata);
+          final driveApi = drive.DriveApi(client);
 
-          request.files.add(http.MultipartFile.fromBytes(
-            'file',
-            reader.result as List<int>,
-            filename: file.name,
-          ));
+          // Metadata
+          final driveFile = drive.File()
+            ..name = file.name
+            ..parents = [dotenv.env['DRIVE_FOLDER_ID'] ?? ""];
 
-          final response = await request.send();
-          final respStr = await response.stream.bytesToString();
+          // Upload
+          final media = drive.Media(
+            (reader.result as List<int>).asStream(),
+            (reader.result as List<int>).length,
+          );
 
-          if (response.statusCode == 200) {
-            final jsonResp = jsonDecode(respStr);
-            final fileId = jsonResp['id'];
-            setState(() {
-              _uploading = false;
-              _status = "Upload successful!";
-              _fileLink = "https://drive.google.com/file/d/$fileId/view";
-            });
-          } else {
-            setState(() {
-              _uploading = false;
-              _status = "Upload failed: ${response.statusCode}";
-            });
-          }
+          final uploaded = await driveApi.files.create(
+            driveFile,
+            uploadMedia: media,
+          );
+
+          setState(() {
+            _uploading = false;
+            _status = "Upload successful!";
+            _fileLink =
+                "https://drive.google.com/file/d/${uploaded.id}/view?usp=sharing";
+          });
         } catch (e) {
           setState(() {
             _uploading = false;
