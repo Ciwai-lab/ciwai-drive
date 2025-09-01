@@ -1,0 +1,11 @@
+[build]
+  command = "flutter build web --release"
+  publish = "build/web"
+
+[build.environment]
+  # Flutter SDK version
+  FLUTTER_VERSION = "3.35.2"
+  PUB_CACHE = "/opt/build/cache/pub"
+
+[[plugins]]
+  package = "netlify-plugin-flutter"
