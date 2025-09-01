@@ -39,7 +39,7 @@ dev_dependencies:
 
 flutter:
   assets:
-    - assets/.env
+    - .env
 
   
   uses-material-design: true

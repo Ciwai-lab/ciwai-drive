@@ -8,7 +8,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
-await dotenv.load(fileName: "assets/.env");
+await dotenv.load(fileName: ".env");
   runApp(const CiwaiDriveApp());
 
   print("ENV Loaded: ${dotenv.env}");
