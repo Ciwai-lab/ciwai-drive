@@ -1,5 +1,13 @@
 [build]
-  command = "bash ./scripts/netlify_build.sh"
+  command = """
+    echo "⚡ Generating assets/.env from Netlify ENV VARS..."
+    mkdir -p assets
+    echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> assets/.env
+    echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> assets/.env
+    echo "ADMIN_EMAILS=$ADMIN_EMAILS" >> assets/.env
+    echo "DRIVE_FOLDER_ID=$DRIVE_FOLDER_ID" >> assets/.env
+    flutter build web --release
+  """
   publish = "build/web"
 
 [build.environment]
