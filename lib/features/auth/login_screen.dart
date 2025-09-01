@@ -18,7 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _googleSignIn = GoogleSignIn(
       clientId: dotenv.env['GOOGLE_CLIENT_ID'],
-      scopes: ['email', 'https://www.googleapis.com/auth/drive.file'],
+      scopes: ['email', drive.DriveApi.driveScope,],
     );
 
     // try silent login (biar gak popup tiap kali)
